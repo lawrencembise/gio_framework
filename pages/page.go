@@ -1,7 +1,7 @@
 package page
 
 import (
-	"duma.vpn.go/icons"
+	"gioFramework/icons"
 	"log"
 	"time"
 

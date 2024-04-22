@@ -1,13 +1,19 @@
 package home
 
 import (
-	alo "duma.vpn.go/applayout"
-	"duma.vpn.go/icons"
-	page "duma.vpn.go/pages"
+	"encoding/json"
+	"gioFramework/icons"
+	"gioFramework/models"
+	page "gioFramework/pages"
+	"gioFramework/pages/widgets"
 	"gioui.org/layout"
+	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"gioui.org/x/component"
+	"io/ioutil"
+	"log"
+	"net/http"
 )
 
 type (
@@ -21,13 +27,19 @@ type Page struct {
 	nonModalDrawer widget.Bool
 	widget.List
 	*page.Router
+	TodoWidgets []*widgets.TodoWidget
 }
 
 // New constructs a Page with the provided router.
 func New(router *page.Router) *Page {
-	return &Page{
+	p := &Page{
 		Router: router,
 	}
+	if err := p.FetchTodos(); err != nil {
+		log.Println("Failed to fetch todos:", err)
+		// Handle error more gracefully depending on your application requirements
+	}
+	return p
 }
 
 var _ page.Page = &Page{}
@@ -49,14 +61,37 @@ func (p *Page) NavItem() component.NavItem {
 
 func (p *Page) Layout(gtx C, th *material.Theme) D {
 	p.List.Axis = layout.Vertical
-	return material.List(th, &p.List).Layout(gtx, 1, func(gtx C, _ int) D {
-		return layout.Flex{
-			Alignment: layout.Middle,
-			Axis:      layout.Vertical,
-		}.Layout(gtx,
-			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-				return alo.DefaultInset.Layout(gtx, material.Body1(th, `This is the example of the home page of out GIO application`).Layout)
-			}),
-		)
+	return material.List(th, &p.List).Layout(gtx, len(p.TodoWidgets), func(gtx C, i int) D {
+		return layout.UniformInset(unit.Dp(4)).Layout(gtx, func(gtx C) D {
+			return p.TodoWidgets[i].Layout(gtx, th)
+		})
 	})
+}
+
+func (p *Page) FetchTodos() error {
+	resp, err := http.Get("https://jsonplaceholder.typicode.com/todos")
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	var todos []models.Todo
+	if err := json.Unmarshal(body, &todos); err != nil {
+		return err
+	}
+
+	p.TodoWidgets = make([]*widgets.TodoWidget, len(todos))
+	for i, todo := range todos {
+		mdl := models.Todo{
+			Title:     todo.Title,
+			Completed: todo.Completed,
+		}
+		p.TodoWidgets[i] = widgets.NewTodoWidget(mdl)
+	}
+	return nil
 }

@@ -1,9 +1,9 @@
 package main
 
 import (
-	page "duma.vpn.go/pages"
-	"duma.vpn.go/pages/home"
 	"flag"
+	page "gioFramework/pages"
+	"gioFramework/pages/home"
 	"gioui.org/app"
 	"gioui.org/font/gofont"
 	"gioui.org/op"

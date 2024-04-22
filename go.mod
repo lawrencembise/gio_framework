@@ -1,4 +1,4 @@
-module duma.vpn.go
+module gioFramework
 
 go 1.21.0
 
